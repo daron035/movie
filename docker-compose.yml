@@ -1,0 +1,42 @@
+version: '3.1'
+
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: dockerfile
+    # command: gunicorn movie.wsgi:application --bind 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - static_volume:/home/app/web/static
+      - media_volume:/home/app/web/media
+  redis: # default port 6379
+    image: redis
+    restart: always
+    depends_on:
+      - web
+  worker:
+    restart: always
+    build: 
+      context: ./
+    command: celery -A mysite worker -l INFO
+  beat: # default port 5555
+    build: 
+      context: ./
+    command: celery -A mysite beat -l INFO
+  flower:
+    build:
+      context: ./
+    command: celery -A mysite flower --port=5566
+    ports:
+      - "5566:5566"
+    # expose:
+    #   - "5566"
+
+
+
+volumes:
+  static_volume:
+  media_volume:
